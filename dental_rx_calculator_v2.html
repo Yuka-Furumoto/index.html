@@ -1,0 +1,107 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>歯科処方量クイック計算</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
+header{background:#101a2b;color:white;padding:22px 18px}h1{font-size:25px;margin:0 0 5px}header p{margin:0;font-size:13px;opacity:.82}
+main{max-width:720px;margin:auto;padding:14px}.card{background:#fff;border:1px solid #d9e2ed;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 2px 10px #15243a0b}
+h2{font-size:19px;margin:0 0 15px}h3{margin:10px 0 8px}label{display:block;font-weight:700;font-size:14px;margin:13px 0 7px}
+input,select{width:100%;min-height:54px;padding:12px 14px;border:2px solid #d3deea;border-radius:13px;background:#fff;color:#172033;font-size:18px}
+button{width:100%;min-height:56px;border:0;border-radius:14px;background:#1476d4;color:#fff;font-size:18px;font-weight:800;margin-top:16px}button.secondary{background:#344054}.result{background:#f8fbff;border:1px solid #d5e5f7;border-radius:15px;padding:16px;line-height:1.75}.big{font-size:20px;font-weight:800}
+.pill{display:inline-block;background:#e9f3ff;color:#155ea8;padding:4px 9px;border-radius:99px;font-size:12px}.warn{margin-top:14px;padding:12px;border:1px solid #f0cf91;background:#fff5df;border-radius:12px;font-size:13px}.ok{margin-top:12px;padding:12px;border:1px solid #b9dfc5;background:#effaf2;border-radius:12px;font-size:14px}.small{font-size:12px;color:#667085;line-height:1.6}.hidden{display:none}hr{border:0;border-top:1px solid #dbe4ef;margin:14px 0}
+.rx{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:14px;white-space:pre-line;line-height:1.8}.guide-item{padding:12px 0;border-bottom:1px solid #e5eaf0}.guide-item:last-child{border-bottom:0}.tag{display:inline-block;font-size:11px;padding:3px 7px;border-radius:8px;background:#eef2f6;margin-right:5px}.red{background:#fff0ef}.blue{background:#edf6ff}
+</style></head><body>
+<header><h1>🦷 歯科処方量クイック計算</h1><p>体重 → 成分量 → 製剤量 → 処方箋記載例</p></header>
+<main>
+<section class="card"><h2>① 患者情報</h2>
+<label>年齢（歳）</label><input id="age" type="number" inputmode="decimal" value="6">
+<label>体重（kg）</label><input id="wt" type="number" inputmode="decimal" value="20" step="0.1">
+<label>処方日数（日）</label><input id="days" type="number" inputmode="numeric" value="3">
+<label>患者区分</label><select id="pt"><option value="child">小児</option><option value="adult">成人</option></select>
+</section>
+
+<section class="card"><h2>② 処置・病態から考える</h2>
+<label>今回の処置・病態</label>
+<select id="scenario">
+<option value="pain">術後疼痛・歯痛（鎮痛薬）</option>
+<option value="simple">単純抜歯・通常の歯科処置</option>
+<option value="wisdom">下顎埋伏智歯抜歯</option>
+<option value="infection_local">歯性感染症：局所処置可能・全身症状なし</option>
+<option value="infection_systemic">歯性感染症：発熱など全身症状あり</option>
+<option value="severe">開口障害・嚥下困難・蜂窩織炎など</option>
+<option value="ie">感染性心内膜炎（IE）高リスク患者</option>
+<option value="implant">インプラント埋入</option>
+</select>
+<div id="guide" class="result" style="margin-top:12px"></div>
+</section>
+
+<section class="card"><h2>③ 薬剤を選択</h2>
+<label>薬剤</label><select id="drug">
+<option value="">薬剤を選択してください</option>
+<option value="acet20">カロナール細粒20%（アセトアミノフェン）</option>
+<option value="acet50">カロナール細粒50%（アセトアミノフェン）</option>
+<option value="lox60">ロキソニン錠60mg（ロキソプロフェン）</option>
+<option value="lox10">ロキソニン細粒10%（ロキソプロフェン）</option>
+<option value="diclo25">ボルタレン錠25mg（ジクロフェナク）</option>
+<option value="amox10">サワシリン細粒10%（アモキシシリン）</option>
+<option value="cefcap100">フロモックス小児用細粒100mg（セフカペン）</option>
+<option value="azi10">ジスロマック細粒小児用10%（アジスロマイシン）</option>
+</select>
+<div id="doseOpt"></div>
+<button id="calc">計算する</button></section>
+
+<section class="card"><h2>④ 処方箋記載例</h2><div id="out" class="result">薬剤を選択して「計算する」を押してください。</div><button id="copy" class="secondary hidden">処方内容をコピー</button></section>
+
+<section class="card"><h2>⑤ 研修医向け・処方の考え方</h2>
+<div class="guide-item"><span class="tag blue">鎮痛</span><b>術後疼痛・歯痛</b><br><span class="small">まず原因処置＋鎮痛。NSAIDs（例：ロキソプロフェン）またはアセトアミノフェンを患者背景に応じて選択。NSAIDs同士の併用は避ける。小児はアセトアミノフェンを体重ベースで計算。</span></div>
+<div class="guide-item"><span class="tag">抗菌薬</span><b>単純抜歯・局所処置可能で全身症状なし</b><br><span class="small">原則として術後の経口抗菌薬は不要。感染源への局所処置が基本。</span></div>
+<div class="guide-item"><span class="tag">抗菌薬</span><b>下顎埋伏智歯抜歯</b><br><span class="small">日本の歯科編では、成人のSSI予防としてアモキシシリン250mgまたは500mgを術前1時間に単回投与。侵襲が大きい等の場合に限り、術後48時間まで250mgを1日3回追加投与を考慮。</span></div>
+<div class="guide-item"><span class="tag red">要注意</span><b>歯性感染症＋発熱など全身症状</b><br><span class="small">局所処置を優先しつつ、成人ではアモキシシリン500mg 1日3回などが手引きに記載。小児は成長・体重・感染重症度等を踏まえて個別判断。</span></div>
+<div class="guide-item"><span class="tag red">紹介</span><b>開口障害・嚥下困難・蜂窩織炎など</b><br><span class="small">経口処方だけで対応する領域ではなく、重症度評価・専門医療機関での静注抗菌薬やドレナージ等を検討。</span></div>
+<div class="guide-item"><span class="tag">IE</span><b>感染性心内膜炎高リスク患者</b><br><span class="small">対象疾患・対象処置を確認。成人ではアモキシシリン2g（または30mg/kg）を処置1時間前に単回投与。ペニシリンアレルギー時は代替薬の確認が必要。小児は本ツールの自動処方対象外。</span></div>
+<div class="guide-item"><span class="tag">インプラント</span><b>インプラント埋入</b><br><span class="small">健常者の清潔な単純埋入ではSSI予防目的の抗菌薬は推奨されない一方、骨造成・骨移植などでは予防投与を検討する場合がある。</span></div>
+<p class="small">※このガイドは歯科診療の判断を置き換えるものではありません。特に抗菌薬は「処置をしたから処方」ではなく、感染の有無・全身症状・手術侵襲・患者背景から適応を判断してください。</p>
+</section>
+
+<section class="card"><h2>⚠️ 医療安全</h2><p class="small">本ツールは計算・記載補助用です。実際の処方では最新の電子添文、適応、禁忌、アレルギー歴、腎・肝機能、併用薬、妊娠可能性、感染症の診断等を必ず確認してください。製剤の実際の分包規格・薬局運用に合わせて最終的な処方量を調整してください。</p></section>
+</main>
+<script>
+(function(){
+const $=id=>document.getElementById(id),out=$("out"),copy=$("copy"),guide=$("guide"),doseOpt=$("doseOpt");let plain="";
+const f=n=>Number(n.toFixed(2)).toString();
+function scenarioText(){
+const s=$("scenario").value;
+const map={
+ pain:["鎮痛薬を検討","原因処置＋鎮痛が基本。抗菌薬は疼痛だけでは適応になりません。","NSAIDsまたはアセトアミノフェンを患者背景に応じて選択。"],
+ simple:["抗菌薬は原則不要","単純抜歯など、全身的・局所的リスクがない場合は予防的抗菌薬は推奨されていません。","疼痛には必要に応じて鎮痛薬。"],
+ wisdom:["下顎埋伏智歯抜歯","成人のSSI予防では、アモキシシリン250mgまたは500mgを術前1時間に単回投与。侵襲が大きい場合などに限り術後48時間まで250mg×1日3回を考慮。","症例の侵襲・汚染・全身リスクを評価。"],
+ infection_local:["局所処置が主役","局所処置が可能で全身症状がない歯性感染症では、経口抗菌薬は原則不要。","排膿・感染源除去などを優先。"],
+ infection_systemic:["抗菌薬＋局所処置を検討","発熱など全身症状がある歯性感染症では抗菌薬を検討。成人の手引きではアモキシシリン500mg×1日3回など。","小児は体重・重症度・適応を個別判断。"],
+ severe:["緊急度評価・紹介","開口障害、嚥下困難、顎周囲蜂窩織炎など重症例は、経口処方だけで対応せず専門医療機関での評価を検討。","気道リスク・全身状態・感染拡大を評価。"],
+ ie:["IE予防の適応確認","高リスク心疾患＋菌血症を起こしうる処置かを確認。成人ではアモキシシリン2g（または30mg/kg）を処置1時間前に単回投与。","小児は本ツールで自動化せず、体重・専門ガイドラインに沿って個別判断。"],
+ implant:["症例別に判断","健常者の清潔な単純埋入ではSSI予防目的の抗菌薬は推奨されない一方、骨造成・骨移植等では予防投与を検討する場合があります。","処置内容と患者リスクを確認。"]};
+const x=map[s];guide.innerHTML=`<b>${x[0]}</b><div style="margin-top:7px">${x[1]}</div><div class="small" style="margin-top:7px">${x[2]}</div>`;
+}
+function doseOptions(){const d=$("drug").value,pt=$("pt").value;if((d==='acet20'||d==='acet50')&&pt==='child')doseOpt.innerHTML='<label>アセトアミノフェン投与量</label><select id="acetDose"><option value="10">10 mg/kg/回</option><option value="15">15 mg/kg/回</option></select>';else if(d==='amox10'&&pt==='child')doseOpt.innerHTML='<label>アモキシシリン1日量</label><select id="amoxDose"><option value="20">20 mg/kg/日</option><option value="40">40 mg/kg/日</option></select><label>分割</label><select id="amoxFreq"><option value="3">1日3回</option><option value="4">1日4回</option></select>';else doseOpt.innerHTML='';}
+function run(){
+ const age=parseFloat($("age").value),w=parseFloat($("wt").value),days=parseInt($("days").value,10),pt=$("pt").value,d=$("drug").value;
+ if(!w||!days||!d){out.textContent="体重・処方日数・薬剤を入力してください。";copy.classList.add("hidden");return}
+ let name="",dose="",sig="",total="",warn="";
+ if(d==='acet20'||d==='acet50'){
+  const c=d==='acet20'?200:500;name=d==='acet20'?'カロナール細粒20%':'カロナール細粒50%';
+  if(pt==='child'){const mg=Math.min(w*Number($("acetDose")?.value||10),500),g=mg/c;const max=Math.min(w*60,1500);dose=`1回 ${f(mg)}mg（${f(g)}g）`;sig=`疼痛時 1回 ${f(g)}g、4～6時間以上あけて`;total=`最大1日 ${f(max)}mg（${f(max/c)}g）`;warn='小児：10～15mg/kg/回、4～6時間以上、1日60mg/kgまで。1回500mg・1日1500mgを超えない。';plain=`Rp.1\n${name} ${f(g)}g\n疼痛時 1回${f(g)}g、4～6時間以上あけて\n${days}日分\n\n※最大1日${f(max/c)}g`;
+  }else{const g=300/c;dose=`1回 ${f(300)}mg（${f(g)}g）`;sig=`1日3回`;total=`${f(g*3*days)}g（${days}日分）`;warn='成人の鎮痛では1回300～1000mg、4～6時間以上、1日4000mgまで。適応・患者背景に応じて調整。';plain=`Rp.1\n${name} ${f(g)}g\n1日3回 毎食後\n${days}日分\n（1回300mgとして計算）`;}
+ } else if(d==='lox60'){name='ロキソニン錠60mg';if(pt==='child'){dose='小児の自動計算対象外';sig='';total='';warn='本ツールでは小児のロキソプロフェンを自動処方しません。';plain='';}else{dose='1回 60mg（1錠）';sig='1日3回';total=`${days*3}錠（${days}日分）`;warn='成人の通常用量。消化性潰瘍、腎障害、アスピリン喘息等の禁忌・慎重投与を確認。';plain=`Rp.1\n${name} 1錠\n1日3回 毎食後\n${days}日分`}}
+ else if(d==='lox10'){name='ロキソニン細粒10%';if(pt==='child'){dose='小児の自動計算対象外';warn='本ツールでは小児のロキソプロフェンを自動処方しません。';plain='';}else{dose='1回 60mg（0.6g）';sig='1日3回';total=`${f(0.6*3*days)}g（${days}日分）`;warn='成人の通常用量。';plain=`Rp.1\n${name} 0.6g\n1日3回 毎食後\n${days}日分`}}
+ else if(d==='diclo25'){name='ボルタレン錠25mg';if(pt==='child'){dose='小児の自動計算対象外';warn='本ツールでは小児のジクロフェナクを自動処方しません。';plain='';}else{dose='1回 25mg（1錠）';sig='1日3回';total=`${days*3}錠（${days}日分）`;warn='成人用。処方理由・患者背景・禁忌を確認。';plain=`Rp.1\n${name} 1錠\n1日3回 毎食後\n${days}日分`}}
+ else if(d==='amox10'){name='サワシリン細粒10%';if(pt==='child'){const perDay=w*Number($("amoxDose")?.value||20),freq=Number($("amoxFreq")?.value||3),mg=perDay/freq,g=mg/100,totalg=g*freq*days;dose=`1回 ${f(mg)}mg（${f(g)}g）`;sig=`1日${freq}回`;total=`${f(totalg)}g（${days}日分）`;warn='小児の添文：通常20～40mg/kg/日を3～4回に分割、最大90mg/kg/日。歯性感染症への具体的な小児処方は重症度・適応等を個別判断。';plain=`Rp.1\n${name} ${f(g)}g\n1日${freq}回 毎食後等、処方意図に応じて\n${days}日分`;}else{dose='1回 250mg';sig='1日3～4回';total=`処方日数に応じて計算`;warn='成人添文：通常250mgを1日3～4回。歯性感染症の手引きでは病態により250～500mgを1日3～4回、全身症状がある場合500mg×1日3回などを記載。';plain=`Rp.1\n${name} 2.5g（250mg/回）\n1日3～4回\n${days}日分`}}
+ else if(d==='cefcap100'){name='フロモックス小児用細粒100mg';if(pt==='child'){const mg=w*3,g=mg/100;dose=`1回 ${f(mg)}mg（${f(g)}g）`;sig='1日3回 食後';total=`${f(g*3*days)}g（${days}日分）`;warn='添文：小児3mg/kg/回×1日3回食後。ピボキシル基による低カルニチン血症に注意。歯性感染症では第3世代セフェムを安易に第一選択としない。';plain=`Rp.1\n${name} ${f(g)}g\n1日3回 毎食後\n${days}日分`;}else{dose='1回100mg（錠剤使用困難時の細粒）';sig='1日3回 食後';total='';warn='成人は錠剤が使用困難な場合の細粒。歯性感染症では第3世代セフェムは手引き上推奨されていません。';plain='';}}
+ else if(d==='azi10'){name='ジスロマック細粒小児用10%';if(pt==='child'){const mg=Math.min(w*10,500),g=mg/100;dose=`1日 ${f(mg)}mg（${f(g)}g）`;sig='1日1回、3日間';total=`${f(g*3)}g（3日分）`;warn='添文：10mg/kg/日を1日1回3日間、1日最大500mg。歯性感染症への小児適応は個別判断。';plain=`Rp.1\n${name} ${f(g)}g\n1日1回\n3日分`;}else{dose='成人はこの小児用細粒の自動処方対象外';warn='成人の歯性感染症では病態・適応に応じて薬剤を選択。';plain='';}}
+ const body=(dose?`<div class="big">${dose}</div><div>${sig}</div><div>${total}</div>`:'');
+ out.innerHTML=`<span class="pill">${pt==='child'?'小児':'成人'}・${f(w)}kg・${age}歳</span><h3>${name}</h3>${body}<hr><div class="rx">${plain||'この条件では自動的な処方箋記載例を作成しません。'}</div><div class="warn">⚠️ ${warn}</div>`;
+ copy.classList.toggle('hidden',!plain);}
+$("scenario").addEventListener('change',scenarioText);$("drug").addEventListener('change',doseOptions);$("pt").addEventListener('change',doseOptions);$("calc").addEventListener('click',run);
+copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(plain);copy.textContent='コピーしました ✓';setTimeout(()=>copy.textContent='処方内容をコピー',1400)}catch(e){alert('コピーできませんでした。')}});
+scenarioText();doseOptions();
+})();
+</script></body></html>
