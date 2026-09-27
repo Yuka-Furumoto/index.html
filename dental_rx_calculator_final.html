@@ -1,0 +1,59 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>歯科処方量クイック計算</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
+header{background:#101a2b;color:white;padding:22px 18px}h1{font-size:25px;margin:0 0 5px}header p{margin:0;font-size:13px;opacity:.8}
+main{max-width:720px;margin:auto;padding:14px}.card{background:#fff;border:1px solid #d9e2ed;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 2px 10px #15243a0b}
+h2{font-size:19px;margin:0 0 15px}label{display:block;font-weight:700;font-size:14px;margin:13px 0 7px}
+input,select{width:100%;min-height:54px;padding:12px 14px;border:2px solid #d3deea;border-radius:13px;background:#fff;color:#172033;font-size:18px}
+button{width:100%;min-height:56px;border:0;border-radius:14px;background:#1476d4;color:#fff;font-size:18px;font-weight:800;margin-top:16px}
+button.secondary{background:#344054}.result{background:#f8fbff;border:1px solid #d5e5f7;border-radius:15px;padding:16px;line-height:1.75}.big{font-size:21px;font-weight:800}
+.pill{display:inline-block;background:#e9f3ff;color:#155ea8;padding:4px 9px;border-radius:99px;font-size:12px}.warn{margin-top:14px;padding:12px;border:1px solid #f0cf91;background:#fff5df;border-radius:12px;font-size:13px}
+.small{font-size:12px;color:#667085;line-height:1.6}.hidden{display:none}hr{border:0;border-top:1px solid #dbe4ef;margin:14px 0}
+</style></head><body>
+<header><h1>🦷 歯科処方量クイック計算</h1><p>体重 → 成分量 → 製剤量 → 処方総量</p></header>
+<main>
+<section class="card"><h2>① 患者情報</h2>
+<label>年齢（歳）</label><input id="age" type="number" inputmode="decimal" value="6">
+<label>体重（kg）</label><input id="wt" type="number" inputmode="decimal" value="20" step="0.1">
+<label>処方日数（日）</label><input id="days" type="number" inputmode="numeric" value="3">
+<label>患者区分</label><select id="pt"><option value="child">小児</option><option value="adult">成人</option></select></section>
+<section class="card"><h2>② 薬剤を選択</h2>
+<label>薬剤</label><select id="drug">
+<option value="">薬剤を選択してください</option>
+<option value="acet20">カロナール細粒20%（アセトアミノフェン）</option>
+<option value="acet50">カロナール細粒50%（アセトアミノフェン）</option>
+<option value="lox60">ロキソニン錠60mg（ロキソプロフェン）</option>
+<option value="lox10">ロキソニン細粒10%（ロキソプロフェン）</option>
+<option value="diclo25">ボルタレン錠25mg（ジクロフェナク）</option>
+<option value="amox10">サワシリン細粒10%（アモキシシリン）</option>
+<option value="cefcap100">フロモックス小児用細粒100mg（セフカペン）</option>
+<option value="azi10">ジスロマック細粒小児用10%（アジスロマイシン）</option>
+</select><button id="calc">計算する</button></section>
+<section class="card"><h2>③ 計算結果</h2><div id="out" class="result">薬剤を選択して「計算する」を押してください。</div><button id="copy" class="secondary hidden">処方内容をコピー</button></section>
+<section class="card"><h2>⚠️ 医療安全</h2><p class="small">本ツールは計算補助用の試作版です。実際の処方では最新の電子添文、適応、禁忌、アレルギー歴、腎・肝機能、併用薬、感染症の診断等を必ず確認してください。抗菌薬は「計算できる」ことと「投与すべき」ことは別です。</p></section>
+</main>
+<script>
+(function(){
+const $=id=>document.getElementById(id),out=$("out"),copy=$("copy");let plain="";
+const f=n=>Number(n.toFixed(2)).toString();
+function run(){
+ const age=parseFloat($("age").value),w=parseFloat($("wt").value),days=parseInt($("days").value,10),pt=$("pt").value,d=$("drug").value;
+ if(!w||!days||!d){out.textContent="体重・処方日数・薬剤を入力してください。";copy.classList.add("hidden");return}
+ let name="",body="",warn="";
+ if(d==="acet20"||d==="acet50"){const c=d==="acet20"?200:500;name=d==="acet20"?"カロナール細粒20%":"カロナール細粒50%";
+ if(pt==="child"){const lo=Math.min(w*10,500),hi=Math.min(w*15,500),mx=Math.min(w*60,1500);body=`1回量：${f(lo)}～${f(hi)} mg<br>製剤量：${f(lo/c)}～${f(hi/c)} g/回<br>投与間隔：4～6時間以上<br>1日総量上限：${f(mx)} mg（${f(mx/c)} g）`;warn="小児の計算値。1回500mg、1日1500mgを超えない。アセトアミノフェン含有薬との重複にも注意。"}else{body="成人：適応・症状により1回300～1000mg。投与間隔は4～6時間以上。";warn="成人の適応別用量・最大量を最新電子添文で確認してください。"}}
+ else if(d==="lox60"){name="ロキソニン錠60mg";body="通常：1回60mg、通常1日3回。頓用では1回60～120mg。";warn="成人用量。小児の計算には使用しません。"}
+ else if(d==="lox10"){name="ロキソニン細粒10%";body="通常：1回60mg（0.6g）、通常1日3回。";warn="成人用量。小児の計算には使用しません。"}
+ else if(d==="diclo25"){name="ボルタレン錠25mg";body="成人：1日75～100mgを原則3回に分割。頓用25～50mg。";warn="成人用。禁忌・慎重投与を含め最新電子添文を確認してください。"}
+ else if(d==="amox10"){name="サワシリン細粒10%";if(pt==="child"){const lo=w*20,hi=w*40;body=`1日量：${f(lo)}～${f(hi)} mg<br>製剤量：${f(lo/100)}～${f(hi/100)} g/日<br>分割：通常3～4回`;warn="適応により用量が異なります。歯科感染症への適応・投与量を最新電子添文で確認してください。"}else{body="成人：通常1回250mgを1日3～4回（適応・症状により増減）。";warn="成人の適応別用量を確認してください。"}}
+ else if(d==="cefcap100"){name="フロモックス小児用細粒100mg";if(pt==="child"){const mg=w*3,g=mg/100;body=`1回量：${f(mg)} mg<br>製剤量：${f(g)} g/回<br>用法：1日3回・食後<br>1日量：${f(g*3)} g<br>${days}日分：${f(g*3*days)} g`;warn="小児3mg/kg/回×1日3回。ピボキシル基による低カルニチン血症にも注意。"}else{body="成人：通常1回100mgを1日3回食後。";warn="成人の適応・用量を最新電子添文で確認してください。"}}
+ else if(d==="azi10"){name="ジスロマック細粒小児用10%";if(pt==="child"){const mg=Math.min(w*10,500),g=mg/100;body=`1日量：${f(mg)} mg<br>製剤量：${f(g)} g/日<br>用法：1日1回、3日間<br>3日総量：${f(g*3)} g`;warn="小児用量は10mg/kg/日、1日最大500mg、3日間。適応を確認してください。"}else{body="この小児用細粒の計算対象は小児です。";warn="成人にはこの小児用量を適用しないでください。"}}
+ out.innerHTML=`<span class="pill">${pt==="child"?"小児":"成人"}・${f(w)}kg・${age}歳</span><h3>${name}</h3><div class="big">${body}</div><hr><div class="small">処方日数：${days}日</div><div class="warn">⚠️ ${warn}</div>`;
+ plain=out.innerText;copy.classList.remove("hidden");
+}
+$("calc").addEventListener("click",run);
+copy.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(plain);copy.textContent="コピーしました ✓";setTimeout(()=>copy.textContent="処方内容をコピー",1400)}catch(e){alert("コピーできませんでした。")}})
+})();
+</script></body></html>
